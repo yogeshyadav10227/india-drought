@@ -38,28 +38,28 @@ gldas_data.head()
 # Load ICRISAT agricultural data
 agri_data = pd.read_csv('/kaggle/input/india-drought-analysis-data-2000-2023/agricultural_data/icrisat_district_data.csv')
 
-print(f"📊 Agricultural Data Shape: {agri_data.shape}")
-print(f"📊 Columns: {list(agri_data.columns)}")
-print(f"\n✅ Agricultural data loaded!")
+print(f" Agricultural Data Shape: {agri_data.shape}")
+print(f"Columns: {list(agri_data.columns)}")
+print(f"\n Agricultural data loaded!")
 # Preview agricultural data
 agri_data.head()
  # Summary statistics for GRACE data
-print("📊 GRACE Data Summary:")
+print(" GRACE Data Summary:")
 print(grace_data.describe())
 #Check for missing values
-print("🔍 Missing Values in GRACE Data:")
+print(" Missing Values in GRACE Data:")
 print(grace_data.isnull().sum())
 
-print("\n🔍 Missing Values in GLDAS Data:")
+print("\n� Missing Values in GLDAS Data:")
 print(gldas_data.isnull().sum())
 
-print("\n🔍 Missing Values in Agricultural Data:")
+print("\nMissing Values in Agricultural Data:")
 print(agri_data.isnull().sum())
 # Unique regions and districts
 if 'region' in grace_data.columns:
-    print("🗺 Regions in Dataset:")
+    print(" Regions in Dataset:")
     print(grace_data['region'].unique())
-    print(f"\n📍 Total Districts: {grace_data['district'].nunique()}")
+    print(f"\n Total Districts: {grace_data['district'].nunique()}")
     print("\nDistricts by Region:")
     print(grace_data.groupby('region')['district'].nunique())
  # Convert date column to datetime
@@ -86,8 +86,8 @@ if 'region' in grace_data.columns and 'lwe_thickness' in grace_data.columns:
     plt.tight_layout()
     plt.show()
     
-    print("📊 Negative values indicate groundwater depletion")
-    print("📊 Positive values indicate groundwater recharge")
+    print(" Negative values indicate groundwater depletion")
+    print(" Positive values indicate groundwater recharge")
 # Convert date column to datetime
 gldas_data['date'] = pd.to_datetime(gldas_data['date'])
 
@@ -121,8 +121,8 @@ if 'district' in grace_data.columns and 'lwe_thickness' in grace_data.columns:
     plt.grid(True, alpha=0.3, axis='x')
     plt.tight_layout()
     plt.show()
-    print(f"\n🔴 Districts with groundwater depletion: {(district_avg < 0).sum()}")
-    print(f"🟢 Districts with groundwater recharge: {(district_avg > 0).sum()}")
+    print(f"\n Districts with groundwater depletion: {(district_avg < 0).sum()}")
+    print(f" Districts with groundwater recharge: {(district_avg > 0).sum()}")
 # Analyze seasonal patterns in groundwater
 if 'month' in grace_data.columns and 'lwe_thickness' in grace_data.columns:
     monthly_pattern = grace_data.groupby('month')['lwe_thickness'].mean()
@@ -139,8 +139,8 @@ if 'month' in grace_data.columns and 'lwe_thickness' in grace_data.columns:
     plt.tight_layout()
     plt.show()
 # Explore crop data structure
-print("🌾 Agricultural Data Structure:")
+print(" Agricultural Data Structure:")
 print(agri_data.info())
 
-print("\n📊 Sample Data:")
+print("\n Sample Data:")
 print(agri_data.head(10))
