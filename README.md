@@ -1,104 +1,146 @@
-1. Project Context and Problem Definition
+# Data manipulation
+import pandas as pd
+import numpy as np
 
+# Visualization
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-1. Cover Page
+# Set style
+plt.style.use('seaborn-v0_8-darkgrid')
+sns.set_palette("husl")
 
-Title: Analysis of Groundwater Depletion and Soil Moisture Trends in India (2000-2023) using GRACE and GLDAS Satellite Data.
-Author(s): [Your Name(s)]
-Date: [Submission Date]
+# Display settings
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', 100)
 
-2. Introduction
+print(" Libraries imported successfully!")
+ # Load GRACE data (2003-2008)
+grace_2003_2008 = pd.read_csv('/kaggle/input/india-drought-analysis-data-2000-2023/groundwater_data/grace_2003_2008.csv')
 
-Contextual background on India's water security challenges and the impact of drought on agriculture.
-Briefly introduce the datasets: GRACE (Groundwater Storage Anomalies), GLDAS (Soil Moisture), and ICRISAT (Agricultural Data).
-State the report's objective: To quantify regional and seasonal water stress and its potential links to agricultural productivity.
+# Load GRACE data (2009-2017)
+grace_2009_2017 = pd.read_csv('/kaggle/input/india-drought-analysis-data-2000-2023/groundwater_data/grace_2009_2017.csv')
 
-3. Problem Statement
+# Combine GRACE datasets
+grace_data = pd.concat([grace_2003_2008, grace_2009_2017], ignore_index=True)
 
-Problem: To identify and quantify the spatial and temporal patterns of groundwater depletion and soil moisture deficits in India between 2000 and 2023, and to pinpoint the most vulnerable districts and regions to inform water management policies.
+print(f" GRACE Data Shape: {grace_data.shape}")
+print(f" Date Range: {grace_data['date'].min()} to {grace_data['date'].max()}")
+print(f"\n GRACE groundwater data loaded!")
+grace_data.head()
+ # Load GLDAS data (2018-2023)
+gldas_data = pd.read_csv('/kaggle/input/india-drought-analysis-data-2000-2023/groundwater_data/gldas_2018_2023.csv')
 
+print(f"GLDAS Data Shape: {gldas_data.shape}")
+print(f" Date Range: {gldas_data['date'].min()} to {gldas_data['date'].max()}")
+print(f"\n GLDAS soil moisture data loaded!")
+gldas_data.head()
+# Load ICRISAT agricultural data
+agri_data = pd.read_csv('/kaggle/input/india-drought-analysis-data-2000-2023/agricultural_data/icrisat_district_data.csv')
 
-2. Requirements and System Design
+print(f"Agricultural Data Shape: {agri_data.shape}")
+print(f" Columns: {list(agri_data.columns)}")
+print(f"\n Agricultural data loaded!")
+# Preview agricultural data
+agri_data.head()
+ # Summary statistics for GRACE data
+print(" GRACE Data Summary:")
+print(grace_data.describe())
+#Check for missing values
+print("Missing Values in GRACE Data:")
+print(grace_data.isnull().sum())
 
+print("\n Missing Values in GLDAS Data:")
+print(gldas_data.isnull().sum())
 
-4. Functional Requirements
+print("\n Missing Values in Agricultural Data:")
+print(agri_data.isnull().sum())
+# Unique regions and districts
+if 'region' in grace_data.columns:
+    print(" Regions in Dataset:")
+    print(grace_data['region'].unique())
+    print(f"\n Total Districts: {grace_data['district'].nunique()}")
+    print("\nDistricts by Region:")
+    print(grace_data.groupby('region')['district'].nunique())
+ # Convert date column to datetime
+grace_data['date'] = pd.to_datetime(grace_data['date'])
 
-Data Ingestion: The system must load and merge the GRACE, GLDAS, and ICRISAT CSV files.
-Data Preprocessing: The system must convert the date column to datetime objects and extract time features (year, month).
-Time-Series Analysis: The system must be able to calculate monthly and annual averages of LWE Thicknessand Soil Moisture by region.
-Visualization: The system must generate time-series plots for regional trends and bar charts for district-level anomalies.
+# Extract year and month
+grace_data['year'] = grace_data['date'].dt.year
+grace_data['month'] = grace_data['date'].dt.month
+ # Plot groundwater anomalies by region (if region column exists)
+if 'region' in grace_data.columns and 'lwe_thickness' in grace_data.columns:
+    plt.figure(figsize=(14, 6))
+    
+    for region in grace_data['region'].unique():
+        region_data = grace_data[grace_data['region'] == region]
+        monthly_avg = region_data.groupby('date')['lwe_thickness'].mean()
+        plt.plot(monthly_avg.index, monthly_avg.values, label=region, linewidth=2)
+    
+    plt.axhline(y=0, color='red', linestyle='--', alpha=0.5, label='Normal Level')
+    plt.title('Groundwater Storage Anomalies by Region (GRACE)', fontsize=16, fontweight='bold')
+    plt.xlabel('Year', fontsize=12)
+    plt.ylabel('Liquid Water Equivalent (cm)', fontsize=12)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+    
+    print(" Negative values indicate groundwater depletion")
+    print(" Positive values indicate groundwater recharge")
+# Convert date column to datetime
+gldas_data['date'] = pd.to_datetime(gldas_data['date'])
 
-5. Non-functional Requirements
+# Plot soil moisture trends
+if 'region' in gldas_data.columns and 'soil_moisture' in gldas_data.columns:
+    plt.figure(figsize=(14, 6))
+    
+    for region in gldas_data['region'].unique():
+        region_data = gldas_data[gldas_data['region'] == region]
+        monthly_avg = region_data.groupby('date')['soil_moisture'].mean()
+        plt.plot(monthly_avg.index, monthly_avg.values, label=region, linewidth=2)
+    
+    plt.title('Soil Moisture Trends by Region (GLDAS)', fontsize=16, fontweight='bold')
+    plt.xlabel('Year', fontsize=12)
+    plt.ylabel('Soil Moisture (kg/m²)', fontsize=12)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+# Average groundwater anomaly by district
+if 'district' in grace_data.columns and 'lwe_thickness' in grace_data.columns:
+    district_avg = grace_data.groupby('district')['lwe_thickness'].mean().sort_values()
+    
+    plt.figure(figsize=(12, 8))
+    colors = ['red' if x < 0 else 'green' for x in district_avg.values]
+    district_avg.plot(kind='barh', color=colors, edgecolor='black', linewidth=0.5)
+    plt.title('Average Groundwater Anomaly by District (2003-2017)', fontsize=16, fontweight='bold')
+    plt.xlabel('Average LWE Thickness (cm)', fontsize=12)
+    plt.ylabel('District', fontsize=12)
+    plt.axvline(x=0, color='black', linestyle='-', linewidth=1)
+    plt.grid(True, alpha=0.3, axis='x')
+    plt.tight_layout()
+    plt.show()
+    print(f"\n Districts with groundwater depletion: {(district_avg < 0).sum()}")
+    print(f" Districts with groundwater recharge: {(district_avg > 0).sum()}")
+# Analyze seasonal patterns in groundwater
+if 'month' in grace_data.columns and 'lwe_thickness' in grace_data.columns:
+    monthly_pattern = grace_data.groupby('month')['lwe_thickness'].mean()
+    
+    plt.figure(figsize=(10, 6))
+    plt.plot(monthly_pattern.index, monthly_pattern.values, marker='o', linewidth=2, markersize=8)
+    plt.title('Average Groundwater Anomaly by Month', fontsize=16, fontweight='bold')
+    plt.xlabel('Month', fontsize=12)
+    plt.ylabel('Average LWE Thickness (cm)', fontsize=12)
+    plt.xticks(range(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
+    plt.axhline(y=0, color='red', linestyle='--', alpha=0.5)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+# Explore crop data structure
+print(" Agricultural Data Structure:")
+print(agri_data.info())
 
-Performance: Data loading and analysis must execute efficiently (e.g., within seconds) using optimized libraries (Pandas, NumPy).
-Reproducibility: The analysis must be fully reproducible using the provided code and public datasets.
-Usability: Visualizations must be clear, well-labeled, and easy to interpret by non-technical stakeholders.
-
-6. System Architecture
-
-Architecture: A Python-based Data Analysis Pipeline running in a Jupyter/Kaggle environment.
-Components: Source Data Files (CSVs) → Data Manipulation Layer (Pandas) → Visualization Layer(Matplotlib/Seaborn).
-Shutterstock   
-
-
-3. Design and Implementation
-
-
-7. Design Diagrams
-
-Workflow Diagram: Illustrates the sequence of steps: Load Data → Concatenate → Datetime Conversion →GroupBy Aggregation → Plotting.
-Class/Component Diagram: The main logical components are the Pandas DataFrames (representing the cleaned datasets) and the custom Analysis/Plotting Functions used for aggregation and visualization.
-ER Diagram (if storage used): N/A, as the data is primarily processed in-memory using Pandas DataFrames and not stored in a relational database.
-
-8. Design Decisions & Rationale
-
-Choice of Tool: Use of Python with Pandas for efficient data manipulation and Matplotlib/Seaborn for high-quality, customizable visualizations.
-Data Merging: Concatenating GRACE datasets by year/date, as they represent the same metric over different time periods.
-Visualization Type: Using a horizontal bar chart to rank district anomalies for easy comparison of depletion severity.
-
-9. Implementation Details
-
-Description of the code snippets provided:
-Loading and concatenating GRACE data (pd.concat).
-Datetime conversion (pd.to_datetime) and feature extraction (.dt.year, .dt.month).
-Aggregation using groupby().mean().
-Plotting with plt.plot() and plt.barh().
-
-
-4. Evaluation and Conclusion
-
-
-10. Screenshots / Results
-
-Present the time-series plot of regional groundwater anomalies (LWE Thickness) .
-Present the bar chart of average LWE thickness by district, highlighting areas of depletion (red).
-Present the seasonal pattern plot showing the annual recharge and depletion cycle.
-
-11. Testing Approach
-
-Data Integrity Check: Verified data shapes and date ranges immediately after loading and merging.
-Missing Value Check: Confirmed that key columns have no missing values (.isnull().sum()).
-Visual Validation: Confirmed that the time-series plots start and end at the expected years, and the seasonal plot shows the expected monsoon peak (July-October).
-
-12. Challenges Faced
-
-Handling the discontinuity between the GRACE (2003-2017) and GLDAS (2018-2023) datasets, as they measure different variables (groundwater vs. soil moisture) with different units.
-Ensuring geographical alignment between satellite-derived data (GRACE/GLDAS) and the agricultural district data (ICRISAT).
-
-13. Learnings & Key Takeaways
-
-The analysis confirms widespread groundwater depletion over the 2003-2017 period, with specific districts identified as major depletion hotspots.
-The data clearly demonstrates the critical dependence of groundwater levels on the annual monsoon cycle.
-
-14. Future Enhancements
-
-Calculate a Standardized Drought Index (e.g., SPEI) for a formal drought assessment.
-Perform correlation analysis to statistically link groundwater levels (lwe_thickness) with agricultural yield data (yield_kg_per_hectare).
-Develop a GIS-based visualization to display the district anomalies on a map of India.
-
-15. References
-
-[Source for GRACE satellite data]
-[Source for GLDAS soil moisture data]
-[ICRISAT District-Level Data citation]
-# india-drought
+print("\n Sample Data:")
+print(agri_data.head(10))
